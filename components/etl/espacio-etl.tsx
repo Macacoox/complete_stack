@@ -3,6 +3,7 @@
 import { useState } from "react"
 
 import { ConfiguracionExtraccionPanel } from "@/components/etl/configuracion-extraccion"
+import { EstadoSupabase } from "@/components/etl/estado-supabase"
 import { PestanaCarga } from "@/components/etl/pestana-carga"
 import { PestanaSupabase } from "@/components/etl/pestana-supabase"
 import { PestanaValidos } from "@/components/etl/pestana-validos"
@@ -38,9 +39,12 @@ export function EspacioEtl() {
   return (
     <main className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-6 sm:px-6">
       <header className="grid gap-1">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          Práctica de Big Data · primer pipeline ETL
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            Práctica de Big Data · primer pipeline ETL
+          </p>
+          <EstadoSupabase />
+        </div>
         <h1 className="text-2xl font-semibold">Open-Meteo → Supabase</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
           Extrae mediciones horarias históricas, observa cómo se transforman y limpian, decide qué
