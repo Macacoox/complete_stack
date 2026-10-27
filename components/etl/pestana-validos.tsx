@@ -257,11 +257,27 @@ export function PestanaValidos({ pipeline }: { pipeline: PipelineEtl }) {
   return (
     <div className="grid gap-3">
       <AvisoLocal />
-      <p className="text-sm text-muted-foreground">
-        Orden de operaciones: <strong>válidos → filtros → ordenación → selección → carga</strong>. Cambiar
-        los filtros no selecciona filas nuevas automáticamente; solo se suben las filas seleccionadas que
-        cumplen los filtros actuales.
-      </p>
+      <div className="grid gap-1 rounded-lg border border-primary/40 bg-primary/5 p-3 text-sm">
+        <p className="font-medium">Cómo elegir qué filas subir</p>
+        <ol className="list-decimal pl-5 text-muted-foreground">
+          <li>
+            <span className="text-foreground">Filtra</span> (opcional): deja solo las ciudades, fechas o
+            valores que te interesen. Sin filtros se ven todas las filas válidas.
+          </li>
+          <li>
+            <span className="text-foreground">Selecciona</span>: pulsa «Seleccionar las … filas filtradas»
+            o marca casillas sueltas en la tabla.
+          </li>
+          <li>
+            <span className="text-foreground">Carga</span>: ve a la pestaña «Vista previa de la carga» y
+            súbelas.
+          </li>
+        </ol>
+        <p className="text-xs text-muted-foreground">
+          Solo se suben las filas que estén marcadas <em>y</em> que pasen los filtros actuales. Cambiar
+          los filtros no marca filas nuevas.
+        </p>
+      </div>
       <PanelFiltros
         pipeline={{
           ...pipeline,

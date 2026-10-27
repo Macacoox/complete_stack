@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowDown, ArrowRight } from "lucide-react"
+import { ArrowDown, ArrowRight, ChevronRight, Hand, Lightbulb } from "lucide-react"
 import { Fragment } from "react"
 
 import { EtiquetaEstado, type Estado } from "@/components/etl/estado"
@@ -16,6 +16,10 @@ type Fase = {
   id: string
   titulo: string
   explicacion: string
+  /** Concepto de Big Data que ilustra la fase, para el estudiante. */
+  concepto: string
+  /** Instrucciones cuando la fase espera una acción del estudiante. */
+  tuTurno?: string[]
   estado: Estado
   textoEstado: string
   entrada: string
@@ -27,6 +31,7 @@ type Fase = {
 
 const TEXTO_ESTADO: Record<Estado, string> = {
   pendiente: "Pendiente",
+  accion: "Te toca a ti",
   en_curso: "En curso",
   completada: "Completada",
   aviso: "Completada con avisos",
@@ -59,6 +64,9 @@ function calcularFases(p: PipelineEtl): Fase[] {
         ? "error"
         : "completada"
 
+  const esperandoSeleccion = hayDatos && p.seleccionados.aSubir.length === 0
+  const esperandoCarga = hayDatos && p.seleccionados.aSubir.length > 0 && !p.carga
+
   const conAvisos = (estado: Estado, avisos: number): Estado =>
     estado === "completada" && avisos > 0 ? "aviso" : estado
 
@@ -67,7 +75,12 @@ function calcularFases(p: PipelineEtl): Fase[] {
       id: "extraccion",
       titulo: "Extracción",
       explicacion: "Una petición HTTP por ciudad a la API histórica. Se guarda el JSON tal cual llega.",
-      estado: estadoExtraccion,
+      concepto: "Ingesta de datos: los originales se guardan sin modificar para poder repetir el proceso.",
+      tuTurno:
+        descargas.length === 0
+          ? ["Arriba, en «1. Configuración», elige ciudades y fechas.", "Pulsa «Extraer datos»."]
+          : undefined,
+      estado: descargas.length === 0 ? "accion" : estadoExtraccion,
       entrada: `${n(descargas.length)} ciudades`,
       salida: `${n(ok.length)} JSON · ${n(brutos)} horas`,
       extra: conError.length ? `${conError.length} ciudad(es) con error` : undefined,
@@ -80,6 +93,7 @@ function calcularFases(p: PipelineEtl): Fase[] {
       id: "transformacion",
       titulo: "Transformación",
       explicacion: "Los arrays paralelos (time, temperatura…) se convierten en un registro por ciudad y hora.",
+      concepto: "Normalización: pasar de un formato de la fuente (columnas) a un esquema de filas.",
       estado: conAvisos(hayDatos ? "completada" : "pendiente", p.transformacion.avisos.length),
       entrada: `${n(p.transformacion.entradas)} JSON`,
       salida: `${n(brutos)} registros`,
@@ -93,6 +107,7 @@ function calcularFases(p: PipelineEtl): Fase[] {
       id: "limpieza",
       titulo: "Limpieza",
       explicacion: "Se validan fecha, tipos y rangos, y se eliminan duplicados. Cada rechazo guarda su motivo.",
+      concepto: "Calidad de datos: nunca se borra en silencio; cada dato descartado deja rastro.",
       estado: conAvisos(hayDatos ? "completada" : "pendiente", p.limpieza.rechazados.length),
       entrada: `${n(brutos)} registros`,
       salida: `${n(p.limpieza.validos.length)} válidos`,
@@ -103,15 +118,20 @@ function calcularFases(p: PipelineEtl): Fase[] {
     {
       id: "filtrado",
       titulo: "Filtrado y selección",
-      explicacion: "Tú decides qué subir: filtros → ordenación → selección de filas.",
-      estado: !hayDatos
-        ? "pendiente"
-        : p.seleccionados.aSubir.length > 0
-          ? "completada"
-          : "pendiente",
+      explicacion:
+        "Aquí eliges qué filas válidas se guardarán en la base de datos. No se sube nada hasta que tú lo marques.",
+      concepto: "Selección: en Big Data no se guarda todo; se elige el subconjunto útil antes de gastar recursos en cargarlo.",
+      tuTurno: esperandoSeleccion
+        ? [
+            "Pulsa esta tarjeta para abrir la pestaña «Válidos».",
+            "Opcional: filtra por ciudad, fechas o valores.",
+            `Pulsa «Seleccionar las ${n(p.seleccionados.ordenados.length)} filas filtradas» o marca filas sueltas.`,
+          ]
+        : undefined,
+      estado: !hayDatos ? "pendiente" : esperandoSeleccion ? "accion" : "completada",
       entrada: `${n(p.limpieza.validos.length)} válidos`,
-      salida: `${n(p.seleccionados.aSubir.length)} para cargar`,
-      extra: `${n(p.seleccionados.ordenados.length)} cumplen los filtros`,
+      salida: `${n(p.seleccionados.aSubir.length)} elegidos`,
+      extra: `${n(p.seleccionados.ordenados.length)} pasan los filtros (sin filtros, pasan todos)`,
       duracionMs: hayDatos ? p.seleccionados.duracionMs : null,
       pestana: "validos",
     },
@@ -119,7 +139,14 @@ function calcularFases(p: PipelineEtl): Fase[] {
       id: "carga",
       titulo: "Carga",
       explicacion: "Upsert por lotes de 500 en Supabase y verificación de las claves en destino.",
-      estado: estadoCarga,
+      concepto: "Idempotencia: gracias al upsert, cargar dos veces lo mismo no crea duplicados.",
+      tuTurno: esperandoCarga
+        ? [
+            "Pulsa esta tarjeta para abrir la «Vista previa de la carga».",
+            `Revisa los datos y pulsa «Subir ${n(p.seleccionados.aSubir.length)} registros a Supabase».`,
+          ]
+        : undefined,
+      estado: esperandoCarga ? "accion" : estadoCarga,
       entrada: p.carga ? `${n(r.total)} congelados` : "—",
       salida: p.carga ? `${n(r.verificados)} verificados` : "—",
       extra: p.carga
@@ -149,7 +176,8 @@ export function PipelineVisual({
       <CardHeader>
         <CardTitle>2. Pipeline ETL</CardTitle>
         <CardDescription>
-          Estados y contadores reales de cada fase. Pulsa una fase para inspeccionar su resultado.
+          Los datos pasan por estas cinco fases de izquierda a derecha. Cada tarjeta muestra cuántos
+          registros entran, cuántos salen y cuánto ha tardado. Pulsa una fase para ver sus datos.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -163,7 +191,8 @@ export function PipelineVisual({
                   className={cn(
                     "grid h-full w-full gap-2 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
                     f.estado === "error" && "border-destructive/50",
-                    f.estado === "en_curso" && "border-sky-400"
+                    f.estado === "en_curso" && "border-sky-400",
+                    f.estado === "accion" && "border-primary ring-2 ring-primary/30"
                   )}
                   aria-label={`Fase ${i + 1}, ${f.titulo}: ${f.textoEstado}. Inspeccionar resultados`}
                 >
@@ -174,6 +203,26 @@ export function PipelineVisual({
                     <EtiquetaEstado estado={f.estado} texto={f.textoEstado} />
                   </div>
                   <p className="text-xs text-muted-foreground">{f.explicacion}</p>
+                  {f.tuTurno && (
+                    <div className="grid gap-1 rounded-md bg-primary/10 px-2 py-1.5 text-xs">
+                      <p className="flex items-center gap-1.5 font-medium text-primary">
+                        <Hand aria-hidden className="size-3.5" />
+                        Qué tienes que hacer
+                      </p>
+                      <ol className="list-decimal pl-4">
+                        {f.tuTurno.map((t) => (
+                          <li key={t}>{t}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                  <p className="flex gap-1.5 text-xs text-muted-foreground">
+                    <Lightbulb aria-hidden className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
+                    <span>
+                      <span className="font-medium text-foreground">Concepto: </span>
+                      {f.concepto}
+                    </span>
+                  </p>
                   <dl className="grid grid-cols-[auto_1fr] gap-x-2 text-xs">
                     <dt className="text-muted-foreground">Entrada</dt>
                     <dd className="text-right tabular-nums">{f.entrada}</dd>
@@ -183,6 +232,9 @@ export function PipelineVisual({
                     <dd className="text-right tabular-nums">{duracion(f.duracionMs)}</dd>
                   </dl>
                   {f.extra && <p className="text-xs text-muted-foreground">{f.extra}</p>}
+                  <span className="mt-auto flex items-center gap-0.5 text-xs font-medium text-primary">
+                    Ver los datos de esta fase <ChevronRight aria-hidden className="size-3.5" />
+                  </span>
                 </button>
               </li>
               {i < fases.length - 1 && (
@@ -237,8 +289,15 @@ export function PipelineVisual({
   )
 }
 
+const formatoPorcentaje = new Intl.NumberFormat("es-ES", { style: "percent", maximumFractionDigits: 1 })
+
+function porcentaje(parte: number, total: number) {
+  return formatoPorcentaje.format(parte / total)
+}
+
 export function Contadores({ pipeline }: { pipeline: PipelineEtl }) {
   const { transformacion, limpieza, seleccionados } = pipeline
+  const total = transformacion.registros.length
   const items = [
     { etiqueta: "Total extraído", valor: transformacion.registros.length, ayuda: "registros horarios recibidos" },
     { etiqueta: "Válidos", valor: limpieza.validos.length, ayuda: "superan la limpieza" },
@@ -253,6 +312,10 @@ export function Contadores({ pipeline }: { pipeline: PipelineEtl }) {
   ]
   return (
     <section aria-label="Contadores" className="grid gap-2">
+      <p className="text-sm text-muted-foreground">
+        Embudo de datos: cada número sale del anterior. Fíjate en cuántos registros se pierden en
+        cada paso y por qué.
+      </p>
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         {items.map((it) => (
           <div
@@ -264,7 +327,10 @@ export function Contadores({ pipeline }: { pipeline: PipelineEtl }) {
           >
             <dt className="text-xs text-muted-foreground">{it.etiqueta}</dt>
             <dd className="text-2xl font-semibold tabular-nums">{n(it.valor)}</dd>
-            <dd className="text-xs text-muted-foreground">{it.ayuda}</dd>
+            <dd className="text-xs text-muted-foreground">
+              {it.ayuda}
+              {total > 0 && it.valor !== total && ` · ${porcentaje(it.valor, total)} del total`}
+            </dd>
           </div>
         ))}
       </dl>

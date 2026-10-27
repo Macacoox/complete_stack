@@ -1,9 +1,11 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import { useState } from "react"
 
 import { ConfiguracionExtraccionPanel } from "@/components/etl/configuracion-extraccion"
 import { EstadoSupabase } from "@/components/etl/estado-supabase"
+import { Glosario, IntroEtl, SiguientePaso } from "@/components/etl/guia-estudiante"
 import { PestanaCarga } from "@/components/etl/pestana-carga"
 import { PestanaSupabase } from "@/components/etl/pestana-supabase"
 import { PestanaValidos } from "@/components/etl/pestana-validos"
@@ -17,6 +19,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { usePipelineEtl } from "@/hooks/use-pipeline-etl"
 import { n } from "@/lib/etl/formato"
+
+// MapLibre necesita el navegador (WebGL): no se renderiza en el servidor.
+const MapaCiudades = dynamic(
+  () => import("@/components/etl/mapa-ciudades").then((m) => m.MapaCiudades),
+  { ssr: false }
+)
 
 export function EspacioEtl() {
   const pipeline = usePipelineEtl()
@@ -47,10 +55,15 @@ export function EspacioEtl() {
         </div>
         <h1 className="text-2xl font-semibold">Open-Meteo → Supabase</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
-          Extrae mediciones horarias históricas, observa cómo se transforman y limpian, decide qué
-          registros subir y comprueba lo que queda guardado en la base de datos.
+          Descarga datos meteorológicos reales, mira cómo se transforman y limpian, decide qué
+          registros guardar y comprueba lo que queda en la base de datos. Sigue los pasos numerados
+          de arriba abajo.
         </p>
       </header>
+
+      <IntroEtl />
+
+      <SiguientePaso pipeline={pipeline} onIr={inspeccionar} />
 
       <ConfiguracionExtraccionPanel
         bloqueado={pipeline.extrayendo || pipeline.cargando}
@@ -115,6 +128,10 @@ export function EspacioEtl() {
           </Tabs>
         </CardContent>
       </Card>
+
+      <MapaCiudades actualizarTras={pipeline.cargando} />
+
+      <Glosario />
     </main>
   )
 }

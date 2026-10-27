@@ -2,15 +2,17 @@ import {
   CircleCheck,
   CircleDashed,
   CircleX,
+  Hand,
   LoaderCircle,
   TriangleAlert,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export type Estado = "pendiente" | "en_curso" | "completada" | "aviso" | "error"
+export type Estado = "pendiente" | "accion" | "en_curso" | "completada" | "aviso" | "error"
 
 const ESTILOS: Record<Estado, { icono: typeof CircleCheck; clase: string }> = {
   pendiente: { icono: CircleDashed, clase: "text-muted-foreground border-border" },
+  accion: { icono: Hand, clase: "text-primary border-primary/50 bg-primary/10" },
   en_curso: {
     icono: LoaderCircle,
     clase: "text-sky-700 border-sky-300 bg-sky-50 dark:text-sky-300 dark:border-sky-800 dark:bg-sky-950",
