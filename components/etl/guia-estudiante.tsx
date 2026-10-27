@@ -41,8 +41,8 @@ const LETRAS = [
 /** Introducción al concepto ETL en lenguaje sencillo. Plegable para quien ya lo conoce. */
 export function IntroEtl() {
   return (
-    <details open className="group rounded-xl border bg-card">
-      <summary className="flex cursor-pointer list-none items-center gap-2 p-4 font-medium [&::-webkit-details-marker]:hidden">
+    <details open className="group rounded-3xl bg-card shadow-card">
+      <summary className="flex cursor-pointer list-none items-center gap-2.5 px-6 py-5 text-[1.0625rem] font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
         <BookOpen aria-hidden className="size-4 text-muted-foreground" />
         ¿Qué es un pipeline ETL? (léelo antes de empezar)
         <ChevronDown
@@ -50,7 +50,7 @@ export function IntroEtl() {
           className="ml-auto size-4 text-muted-foreground transition-transform group-open:rotate-180"
         />
       </summary>
-      <div className="grid gap-4 px-4 pb-4">
+      <div className="grid gap-5 px-6 pb-6">
         <p className="max-w-3xl text-sm text-muted-foreground">
           En Big Data los datos casi nunca llegan listos para analizar: vienen
           de fuentes externas, con formatos raros, huecos y errores. Un{" "}
@@ -63,10 +63,10 @@ export function IntroEtl() {
           {LETRAS.map(({ letra, titulo, icono: Icono, que, aqui }) => (
             <li
               key={letra}
-              className="grid content-start gap-2 rounded-lg bg-muted/50 p-3 text-sm"
+              className="grid content-start gap-2 rounded-2xl bg-muted p-4 text-sm"
             >
               <div className="flex items-center gap-2">
-                <span className="grid size-8 place-items-center rounded-md bg-primary text-base font-semibold text-primary-foreground">
+                <span className="grid size-9 place-items-center rounded-xl bg-primary text-base font-semibold text-primary-foreground">
                   {letra}
                 </span>
                 <span className="font-medium">{titulo}</span>
@@ -172,14 +172,16 @@ export function SiguientePaso({
     <section
       aria-live="polite"
       aria-label="Siguiente paso"
-      className="flex flex-wrap items-center gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4"
+      className="flex flex-wrap items-center gap-4 rounded-3xl bg-card p-5 shadow-card sm:p-6"
     >
-      <Compass aria-hidden className="size-5 shrink-0 text-primary" />
+      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10">
+        <Compass aria-hidden className="size-5 text-primary" />
+      </span>
       <div className="grid min-w-0 flex-1 gap-0.5">
         <p className="text-xs font-medium text-muted-foreground">
           Siguiente paso · {paso.numero} de {TOTAL_PASOS}
         </p>
-        <p className="font-medium">{paso.titulo}</p>
+        <p className="text-[1.0625rem] font-semibold tracking-tight">{paso.titulo}</p>
         <p className="text-sm text-muted-foreground">{paso.detalle}</p>
       </div>
       <div className="flex gap-1" aria-hidden>
@@ -194,7 +196,7 @@ export function SiguientePaso({
         <button
           type="button"
           onClick={() => onIr(paso.accion!.pestana)}
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98]"
         >
           {paso.accion.texto}
         </button>
@@ -253,8 +255,8 @@ const TERMINOS: [string, string][] = [
 
 export function Glosario() {
   return (
-    <details className="group rounded-xl border bg-card">
-      <summary className="flex cursor-pointer list-none items-center gap-2 p-4 font-medium [&::-webkit-details-marker]:hidden">
+    <details className="group rounded-3xl bg-card shadow-card">
+      <summary className="flex cursor-pointer list-none items-center gap-2.5 px-6 py-5 text-[1.0625rem] font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
         <BookOpen aria-hidden className="size-4 text-muted-foreground" />
         Glosario de términos
         <ChevronDown
@@ -262,7 +264,7 @@ export function Glosario() {
           className="ml-auto size-4 text-muted-foreground transition-transform group-open:rotate-180"
         />
       </summary>
-      <dl className="grid gap-x-6 gap-y-3 px-4 pb-4 text-sm sm:grid-cols-2">
+      <dl className="grid gap-x-8 gap-y-4 px-6 pb-6 text-sm sm:grid-cols-2">
         {TERMINOS.map(([termino, definicion]) => (
           <div key={termino}>
             <dt className="font-medium">{termino}</dt>

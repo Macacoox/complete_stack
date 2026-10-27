@@ -124,7 +124,7 @@ export function ConfiguracionExtraccionPanel({
             </div>
           </div>
 
-          <div className="grid content-start gap-3 rounded-lg bg-muted/50 p-3 text-sm md:w-64">
+          <div className="grid content-start gap-3 rounded-2xl bg-muted p-4 text-sm md:w-64">
             <p className="font-medium">Volumen previsto</p>
             <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1">
               <dt className="text-muted-foreground">Ciudades / peticiones</dt>

@@ -184,15 +184,15 @@ export function PipelineVisual({
         <ol className="grid gap-2 lg:grid-cols-[repeat(9,auto)] lg:items-stretch">
           {fases.map((f, i) => (
             <Fragment key={f.id}>
-              <li className="lg:min-w-0">
+              <li className="lg:h-full lg:min-w-0">
                 <button
                   type="button"
                   onClick={() => onInspeccionar(f.pestana)}
                   className={cn(
-                    "grid h-full w-full gap-2 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-                    f.estado === "error" && "border-destructive/50",
-                    f.estado === "en_curso" && "border-sky-400",
-                    f.estado === "accion" && "border-primary ring-2 ring-primary/30"
+                    "flex h-full w-full flex-col gap-2.5 rounded-2xl bg-muted p-4 text-left text-sm transition-all hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:scale-[0.99]",
+                    f.estado === "error" && "ring-2 ring-destructive/50",
+                    f.estado === "en_curso" && "ring-2 ring-sky-400",
+                    f.estado === "accion" && "bg-card shadow-card ring-2 ring-primary"
                   )}
                   aria-label={`Fase ${i + 1}, ${f.titulo}: ${f.textoEstado}. Inspeccionar resultados`}
                 >
@@ -204,7 +204,7 @@ export function PipelineVisual({
                   </div>
                   <p className="text-xs text-muted-foreground">{f.explicacion}</p>
                   {f.tuTurno && (
-                    <div className="grid gap-1 rounded-md bg-primary/10 px-2 py-1.5 text-xs">
+                    <div className="grid gap-1 rounded-xl bg-primary/10 px-3 py-2 text-xs">
                       <p className="flex items-center gap-1.5 font-medium text-primary">
                         <Hand aria-hidden className="size-3.5" />
                         Qué tienes que hacer
@@ -223,7 +223,8 @@ export function PipelineVisual({
                       {f.concepto}
                     </span>
                   </p>
-                  <dl className="grid grid-cols-[auto_1fr] gap-x-2 text-xs">
+                  {f.extra && <p className="text-xs text-muted-foreground">{f.extra}</p>}
+                  <dl className="mt-auto grid grid-cols-[auto_1fr] gap-x-2 border-t border-foreground/5 pt-2.5 text-xs">
                     <dt className="text-muted-foreground">Entrada</dt>
                     <dd className="text-right tabular-nums">{f.entrada}</dd>
                     <dt className="text-muted-foreground">Salida</dt>
@@ -231,8 +232,7 @@ export function PipelineVisual({
                     <dt className="text-muted-foreground">Duración</dt>
                     <dd className="text-right tabular-nums">{duracion(f.duracionMs)}</dd>
                   </dl>
-                  {f.extra && <p className="text-xs text-muted-foreground">{f.extra}</p>}
-                  <span className="mt-auto flex items-center gap-0.5 text-xs font-medium text-primary">
+                  <span className="flex items-center gap-0.5 text-xs font-medium text-primary">
                     Ver los datos de esta fase <ChevronRight aria-hidden className="size-3.5" />
                   </span>
                 </button>
@@ -321,12 +321,12 @@ export function Contadores({ pipeline }: { pipeline: PipelineEtl }) {
           <div
             key={it.etiqueta}
             className={cn(
-              "rounded-lg border bg-card p-3",
-              it.destacado && "border-primary/60 ring-1 ring-primary/20"
+              "rounded-2xl bg-card p-4 shadow-card",
+              it.destacado && "ring-2 ring-primary"
             )}
           >
             <dt className="text-xs text-muted-foreground">{it.etiqueta}</dt>
-            <dd className="text-2xl font-semibold tabular-nums">{n(it.valor)}</dd>
+            <dd className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">{n(it.valor)}</dd>
             <dd className="text-xs text-muted-foreground">
               {it.ayuda}
               {total > 0 && it.valor !== total && ` · ${porcentaje(it.valor, total)} del total`}

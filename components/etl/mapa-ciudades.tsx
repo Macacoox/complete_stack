@@ -73,7 +73,7 @@ function pintarMarcadores(marcadores: Marcadores, resumen: ResumenCiudad[]) {
       ? 16 + Math.round((r.registros / maximo) * 16)
       : 14
     punto.style.width = punto.style.height = `${tamano}px`
-    punto.style.background = r?.registros ? "#2563eb" : "#9ca3af"
+    punto.style.background = r?.registros ? "#0071e3" : "#8e8e93"
     marcador.getPopup()?.setDOMContent(contenidoPopup(nombre, r))
   }
 }
@@ -127,7 +127,7 @@ export function MapaCiudades({ actualizarTras }: { actualizarTras: boolean }) {
     for (const c of CIUDADES) {
       const punto = document.createElement("div")
       punto.style.cssText =
-        "width:16px;height:16px;border-radius:9999px;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4);background:#9ca3af;cursor:pointer"
+        "width:16px;height:16px;border-radius:9999px;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4);background:#8e8e93;cursor:pointer"
       punto.setAttribute("aria-label", c.nombre)
       const marcador = new maplibregl.Marker({ element: punto })
         .setLngLat([c.longitud, c.latitud])
@@ -181,7 +181,7 @@ export function MapaCiudades({ actualizarTras }: { actualizarTras: boolean }) {
         ) : (
           <div
             ref={contenedor}
-            className="h-96 w-full overflow-hidden rounded-lg border"
+            className="h-96 w-full overflow-hidden rounded-2xl"
           />
         )}
         <div className="flex flex-wrap items-center gap-3 text-sm">
