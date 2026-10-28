@@ -222,12 +222,10 @@ export function PipelineVisual({
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
-        {/* Una columna en estrecho, dos en el panel (líneas de lectura cómoda)
-            y una fila con flechas solo cuando hay sitio para las cinco fases. */}
-        <ol className="grid gap-3 @xl:grid-cols-2 @5xl:grid-cols-[repeat(9,auto)] @5xl:items-stretch @5xl:gap-2">
+        <ol className="grid gap-2 @5xl:grid-cols-[repeat(9,auto)] @5xl:items-stretch">
           {fases.map((f, i) => (
             <Fragment key={f.id}>
-              <li className="min-w-0 @xl:h-full">
+              <li className="@5xl:h-full @5xl:min-w-0">
                 <button
                   type="button"
                   onClick={() => onInspeccionar(f.pestana)}
@@ -298,7 +296,7 @@ export function PipelineVisual({
               {i < fases.length - 1 && (
                 <li
                   aria-hidden
-                  className="flex items-center justify-center text-muted-foreground @xl:hidden @5xl:flex"
+                  className="flex items-center justify-center text-muted-foreground"
                 >
                   <ArrowDown className="size-4 @5xl:hidden" />
                   <ArrowRight className="hidden size-4 @5xl:block" />

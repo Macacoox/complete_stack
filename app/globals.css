@@ -156,6 +156,12 @@
   box-shadow: none;
   border-radius: 0;
   gap: 1rem;
+  /* Sin margen interior, el recorte cortaría el borde de resaltado (ring) de
+     lo que va dentro, como la fase marcada del pipeline. */
+  overflow: visible;
+  /* No se ensancha con su contenido: las tablas y las pestañas anchas se
+     desplazan dentro de su propio contenedor en lugar de salirse del panel. */
+  min-width: 0;
 }
 
 /* Popups del globo con los colores del tema. */
