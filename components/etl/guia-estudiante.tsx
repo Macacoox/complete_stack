@@ -3,10 +3,12 @@
 import {
   BookOpen,
   ChevronDown,
+  CloudDownload,
   Compass,
-  Database,
-  Filter,
-  Sparkles,
+  ListChecks,
+  ShieldCheck,
+  Shuffle,
+  Upload,
 } from "lucide-react"
 
 import type { PestanaId } from "@/components/etl/pipeline-visual"
@@ -14,79 +16,87 @@ import type { PipelineEtl } from "@/hooks/use-pipeline-etl"
 import { resumenLotes } from "@/lib/etl/carga"
 import { n } from "@/lib/etl/formato"
 
-const LETRAS = [
+/** Los pasos del pipeline. La letra indica la fase ETL a la que pertenecen. */
+const RECORRIDO = [
   {
+    icono: CloudDownload,
+    titulo: "Extraer",
     letra: "E",
-    titulo: "Extract · Extraer",
-    icono: Database,
-    que: "Leer los datos de su origen sin tocarlos.",
-    aqui: "Pedimos a la API de Open-Meteo el tiempo hora a hora de varias ciudades. Llega un JSON por ciudad.",
+    texto: "Pedimos los datos por HTTP. Llega un JSON por ciudad, sin tocarlo.",
   },
   {
+    icono: Shuffle,
+    titulo: "Transformar",
     letra: "T",
-    titulo: "Transform · Transformar",
-    icono: Sparkles,
-    que: "Dar a los datos la forma y la calidad que necesita el destino.",
-    aqui: "Convertimos el JSON en filas (ciudad + hora + medidas), validamos rangos y quitamos duplicados.",
+    texto: "Pasamos el JSON a filas: una por ciudad y hora.",
   },
   {
-    letra: "L",
-    titulo: "Load · Cargar",
-    icono: Filter,
-    que: "Guardar el resultado en el sistema donde se analizará.",
-    aqui: "Subimos las filas elegidas a una tabla de Supabase (PostgreSQL) y comprobamos que han llegado.",
+    icono: ShieldCheck,
+    titulo: "Limpiar",
+    letra: "T",
+    texto:
+      "Validamos fechas y rangos y quitamos duplicados. Cada rechazo dice por qué.",
   },
-]
+  {
+    icono: ListChecks,
+    titulo: "Seleccionar",
+    letra: "T",
+    texto: "Tú eliges qué filas válidas merece la pena guardar.",
+  },
+  {
+    icono: Upload,
+    titulo: "Cargar",
+    letra: "L",
+    texto: "Subimos las filas por lotes y comprobamos que han llegado.",
+  },
+] as const
 
-/** Introducción al concepto ETL en lenguaje sencillo. Plegable para quien ya lo conoce. */
-export function IntroEtl() {
+/** Explica, de un vistazo y en lenguaje sencillo, qué hace la página. */
+export function ComoFunciona() {
   return (
-    <details open className="group rounded-3xl bg-card shadow-card">
-      <summary className="flex cursor-pointer list-none items-center gap-2.5 px-6 py-5 text-[1.0625rem] font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
-        <BookOpen aria-hidden className="size-4 text-muted-foreground" />
-        ¿Qué es un pipeline ETL? (léelo antes de empezar)
-        <ChevronDown
-          aria-hidden
-          className="ml-auto size-4 text-muted-foreground transition-transform group-open:rotate-180"
-        />
-      </summary>
-      <div className="grid gap-5 px-6 pb-6">
-        <p className="max-w-3xl text-sm text-muted-foreground">
-          En Big Data los datos casi nunca llegan listos para analizar: vienen
-          de fuentes externas, con formatos raros, huecos y errores. Un{" "}
-          <strong className="text-foreground">pipeline ETL</strong> es la cadena
-          de pasos que los lleva del origen a una base de datos limpia. Esta
-          página te deja ejecutar cada paso y ver qué les pasa a los datos en
-          cada uno.
-        </p>
-        <ol className="grid gap-3 md:grid-cols-3">
-          {LETRAS.map(({ letra, titulo, icono: Icono, que, aqui }) => (
-            <li
-              key={letra}
-              className="grid content-start gap-2 rounded-2xl bg-muted p-4 text-sm"
-            >
-              <div className="flex items-center gap-2">
-                <span className="grid size-9 place-items-center rounded-xl bg-primary text-base font-semibold text-primary-foreground">
-                  {letra}
-                </span>
-                <span className="font-medium">{titulo}</span>
-                <Icono
-                  aria-hidden
-                  className="ml-auto size-4 text-muted-foreground"
-                />
-              </div>
-              <p>{que}</p>
-              <p className="text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">
-                  En esta práctica:{" "}
-                </span>
-                {aqui}
-              </p>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </details>
+    <section
+      id="como-funciona"
+      aria-labelledby="titulo-como-funciona"
+      className="grid gap-4"
+    >
+      <h2
+        id="titulo-como-funciona"
+        className="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+      >
+        Los 5 pasos del pipeline
+      </h2>
+
+      <ol className="grid gap-3">
+        {RECORRIDO.map(({ icono: Icono, titulo, letra, texto }, i) => (
+          <li
+            key={titulo}
+            className="grid grid-cols-[auto_1fr] items-start gap-x-3 gap-y-0.5 text-sm"
+          >
+            <span className="row-span-2 grid size-10 place-items-center rounded-xl border border-white/25 bg-white/10 text-white">
+              <Icono aria-hidden className="size-5" />
+            </span>
+            <span className="flex items-center gap-2 font-semibold">
+              {i + 1}. {titulo}
+              <span
+                className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold text-white"
+                title={
+                  letra === "E"
+                    ? "Extract"
+                    : letra === "T"
+                      ? "Transform"
+                      : "Load"
+                }
+              >
+                {letra}
+              </span>
+            </span>
+            <span className="text-[0.8125rem] leading-relaxed text-muted-foreground">
+              {texto}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }
 
@@ -172,35 +182,37 @@ export function SiguientePaso({
     <section
       aria-live="polite"
       aria-label="Siguiente paso"
-      className="flex flex-wrap items-center gap-4 rounded-3xl bg-card p-5 shadow-card sm:p-6"
+      className="border-t border-white/10"
     >
-      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10">
-        <Compass aria-hidden className="size-5 text-primary" />
-      </span>
-      <div className="grid min-w-0 flex-1 gap-0.5">
-        <p className="text-xs font-medium text-muted-foreground">
-          Siguiente paso · {paso.numero} de {TOTAL_PASOS}
-        </p>
-        <p className="text-[1.0625rem] font-semibold tracking-tight">{paso.titulo}</p>
-        <p className="text-sm text-muted-foreground">{paso.detalle}</p>
+      <div aria-hidden className="h-0.5 bg-white/10">
+        <div
+          className="h-full bg-primary transition-[width] duration-500"
+          style={{
+            width: `${(Math.min(paso.numero, TOTAL_PASOS) / TOTAL_PASOS) * 100}%`,
+          }}
+        />
       </div>
-      <div className="flex gap-1" aria-hidden>
-        {Array.from({ length: TOTAL_PASOS }, (_, i) => (
-          <span
-            key={i}
-            className={`h-1.5 w-6 rounded-full ${i < paso.numero ? "bg-primary" : "bg-muted"}`}
-          />
-        ))}
+      <div className="flex items-center gap-3 px-5 py-3">
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10">
+          <Compass aria-hidden className="size-4 text-white" />
+        </span>
+        <div className="grid min-w-0 flex-1">
+          <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+            Siguiente paso · {paso.numero} de {TOTAL_PASOS}
+          </p>
+          <p className="text-sm font-semibold">{paso.titulo}</p>
+          <p className="text-xs text-muted-foreground">{paso.detalle}</p>
+        </div>
+        {paso.accion && (
+          <button
+            type="button"
+            onClick={() => onIr(paso.accion!.pestana)}
+            className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
+          >
+            {paso.accion.texto}
+          </button>
+        )}
       </div>
-      {paso.accion && (
-        <button
-          type="button"
-          onClick={() => onIr(paso.accion!.pestana)}
-          className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98]"
-        >
-          {paso.accion.texto}
-        </button>
-      )}
     </section>
   )
 }
@@ -255,7 +267,7 @@ const TERMINOS: [string, string][] = [
 
 export function Glosario() {
   return (
-    <details className="group rounded-3xl bg-card shadow-card">
+    <details open className="group rounded-3xl bg-card shadow-card">
       <summary className="flex cursor-pointer list-none items-center gap-2.5 px-6 py-5 text-[1.0625rem] font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
         <BookOpen aria-hidden className="size-4 text-muted-foreground" />
         Glosario de términos
@@ -264,7 +276,7 @@ export function Glosario() {
           className="ml-auto size-4 text-muted-foreground transition-transform group-open:rotate-180"
         />
       </summary>
-      <dl className="grid gap-x-8 gap-y-4 px-6 pb-6 text-sm sm:grid-cols-2">
+      <dl className="grid gap-x-8 gap-y-4 px-6 pb-6 text-sm @xl:grid-cols-2">
         {TERMINOS.map(([termino, definicion]) => (
           <div key={termino}>
             <dt className="font-medium">{termino}</dt>

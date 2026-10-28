@@ -2,216 +2,311 @@
 
 import "maplibre-gl/dist/maplibre-gl.css"
 
-import { Map as MapaIcono, RefreshCw } from "lucide-react"
 import maplibregl from "maplibre-gl"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import type { ResumenCiudad } from "@/hooks/use-resumen-ciudades"
 import { CIUDADES } from "@/lib/etl/ciudades"
-import { fechaUtc, n } from "@/lib/etl/formato"
-
-type ResumenCiudad = {
-  ciudad: string
-  registros: number
-  desde?: string
-  hasta?: string
-  tempMin?: number
-  tempMax?: number
-}
+import { n } from "@/lib/etl/formato"
 
 const CLAVE_MAPTILER = process.env.NEXT_PUBLIC_MAPTILER_KEY
 
-/** Contenido del popup creado con nodos DOM (no innerHTML). */
-function contenidoPopup(nombre: string, r: ResumenCiudad | undefined) {
-  const raiz = document.createElement("div")
-  raiz.style.cssText =
-    "font: 12px/1.5 system-ui, sans-serif; color: #111; min-width: 180px"
-  const titulo = document.createElement("strong")
-  titulo.textContent = nombre
-  titulo.style.fontSize = "14px"
-  raiz.append(titulo)
-  const lineas = !r
-    ? ["Cargando…"]
-    : r.registros === 0
-      ? [
-          "Sin datos en Supabase todavía.",
-          "Extrae y carga esta ciudad para verla aquí.",
-        ]
-      : [
-          `${n(r.registros)} registros horarios guardados`,
-          `Desde ${fechaUtc(r.desde!)}`,
-          `Hasta ${fechaUtc(r.hasta!)}`,
-          `Temperatura: ${r.tempMin} °C a ${r.tempMax} °C`,
-        ]
-  for (const texto of lineas) {
-    const p = document.createElement("div")
-    p.textContent = texto
-    raiz.append(p)
-  }
-  return raiz
+/** Vista satélite con nombres de ciudades, carreteras y fronteras. */
+const ESTILO = `https://api.maptiler.com/maps/hybrid/style.json?key=${CLAVE_MAPTILER}`
+
+const LIMITES_CIUDADES = CIUDADES.reduce(
+  (l, c) => l.extend([c.longitud, c.latitud]),
+  new maplibregl.LngLatBounds()
+)
+
+/** Ancho aproximado de la etiqueta que va a la derecha de cada punto. */
+const ANCHO_ETIQUETA = 170
+
+const ESTILO_ETIQUETA =
+  "position:absolute;white-space:nowrap;text-align:left;font:600 13px/1.3 system-ui,sans-serif;color:#fff;background:rgb(3 7 18 / 90%);padding:4px 8px;border-radius:6px;pointer-events:none"
+
+/** Lados posibles de la etiqueta respecto al punto, en orden de preferencia. */
+const LADOS = {
+  derecha: "left:26px;top:50%;transform:translateY(-50%)",
+  izquierda: "right:26px;top:50%;transform:translateY(-50%)",
+  arriba: "left:50%;bottom:26px;transform:translateX(-50%)",
+  abajo: "left:50%;top:26px;transform:translateX(-50%)",
+} as const
+type Lado = keyof typeof LADOS
+
+const grados = (t: number) =>
+  `${t.toLocaleString("es-ES", { maximumFractionDigits: 1 })} °C`
+
+type Marcador = {
+  caja: HTMLElement
+  punto: HTMLElement
+  etiqueta: HTMLElement
+  cifra: HTMLElement
+  clima: HTMLElement
+  color: string
 }
 
-type Marcadores = Map<
-  string,
-  { marcador: maplibregl.Marker; punto: HTMLElement }
->
+type Caja = { left: number; top: number; right: number; bottom: number }
 
-/** Azul y más grande cuantos más registros; gris si la ciudad no tiene datos. */
-function pintarMarcadores(marcadores: Marcadores, resumen: ResumenCiudad[]) {
-  const maximo = Math.max(1, ...resumen.map((r) => r.registros))
-  for (const [nombre, { marcador, punto }] of marcadores) {
-    const r = resumen.find((x) => x.ciudad === nombre)
+const seSolapan = (a: Caja, b: Caja) =>
+  a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
+
+/**
+ * Coloca cada etiqueta en el primer lado donde no pisa otra etiqueta ni otro
+ * punto, no queda bajo un panel y no se sale del mapa. Se repite cada vez que
+ * el mapa se mueve o cambia de tamaño, así vale para cualquier encuadre.
+ */
+function colocarEtiquetas(
+  mapa: maplibregl.Map,
+  marcadores: Map<string, Marcador>
+) {
+  const lienzo = mapa.getContainer().getBoundingClientRect()
+  const obstaculos = [
+    ...document.querySelectorAll(
+      "[data-panel], .maplibregl-ctrl-bottom-right > .maplibregl-ctrl"
+    ),
+  ]
+    .filter((e) => getComputedStyle(e).visibility !== "hidden")
+    .map((e) => e.getBoundingClientRect())
+    .filter((r) => r.width > 0)
+  const lista = [...marcadores.values()]
+  const centros = lista.map((m) => {
+    const r = m.caja.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
+  const puntos: Caja[] = centros.map(({ x, y }) => ({
+    left: x - 12,
+    top: y - 12,
+    right: x + 12,
+    bottom: y + 12,
+  }))
+  const colocadas: Caja[] = []
+
+  lista.forEach((m, i) => {
+    const { x, y } = centros[i]
+    const ancho = m.etiqueta.offsetWidth
+    const alto = m.etiqueta.offsetHeight
+    const caja = (lado: Lado): Caja => {
+      const left =
+        lado === "derecha"
+          ? x + 14
+          : lado === "izquierda"
+            ? x - 14 - ancho
+            : x - ancho / 2
+      const top =
+        lado === "arriba"
+          ? y - 14 - alto
+          : lado === "abajo"
+            ? y + 14
+            : y - alto / 2
+      return { left, top, right: left + ancho, bottom: top + alto }
+    }
+    const libre = (c: Caja) =>
+      c.left >= lienzo.left &&
+      c.top >= lienzo.top &&
+      c.right <= lienzo.right &&
+      c.bottom <= lienzo.bottom &&
+      !obstaculos.some((o) => seSolapan(c, o)) &&
+      !colocadas.some((o) => seSolapan(c, o)) &&
+      !puntos.some((p, j) => j !== i && seSolapan(c, p))
+    const lado =
+      (Object.keys(LADOS) as Lado[]).find((l) => libre(caja(l))) ?? "derecha"
+    m.etiqueta.style.cssText = `${ESTILO_ETIQUETA};${LADOS[lado]}`
+    colocadas.push(caja(lado))
+  })
+}
+
+/** Color de la ciudad y más grande cuantos más registros; gris si no tiene datos. */
+function pintarMarcadores(
+  marcadores: Map<string, Marcador>,
+  resumen: ResumenCiudad[] | null
+) {
+  const maximo = Math.max(1, ...(resumen ?? []).map((r) => r.registros))
+  for (const [nombre, { punto, cifra, clima, color }] of marcadores) {
+    const r = resumen?.find((x) => x.ciudad === nombre)
     const tamano = r?.registros
-      ? 16 + Math.round((r.registros / maximo) * 16)
-      : 14
+      ? 12 + Math.round((r.registros / maximo) * 8)
+      : 10
     punto.style.width = punto.style.height = `${tamano}px`
-    punto.style.background = r?.registros ? "#0071e3" : "#8e8e93"
-    marcador.getPopup()?.setDOMContent(contenidoPopup(nombre, r))
+    punto.style.background = r?.registros ? color : "#8e8e93"
+    cifra.textContent = !r
+      ? "…"
+      : r.registros
+        ? `${n(r.registros)} registros`
+        : "sin datos"
+    clima.textContent =
+      r?.tempMedia !== undefined && r.tempMax !== undefined
+        ? `media ${grados(r.tempMedia)} · máx. ${grados(r.tempMax)}`
+        : ""
+    clima.style.display = clima.textContent ? "block" : "none"
   }
 }
 
 /**
- * Mapa con un marcador por ciudad. El tamaño y el color del marcador dependen
- * de cuántos registros de esa ciudad hay realmente en Supabase.
+ * Margen para encuadrar las ciudades en el hueco que dejan libres los paneles.
+ * Se mide su posición real, así vale con el panel izquierdo abierto o plegado.
  */
-export function MapaCiudades({ actualizarTras }: { actualizarTras: boolean }) {
-  const contenedor = useRef<HTMLDivElement>(null)
-  const marcadores = useRef<Marcadores>(new Map())
-  const [resumen, setResumen] = useState<ResumenCiudad[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [cargando, setCargando] = useState(false)
-
-  const cargarResumen = useCallback(async () => {
-    setCargando(true)
-    setError(null)
-    try {
-      const res = await fetch("/api/resumen-ciudades", { cache: "no-store" })
-      const cuerpo = (await res.json()) as {
-        ciudades?: ResumenCiudad[]
-        error?: string
-      }
-      if (!res.ok) throw new Error(cuerpo.error ?? `HTTP ${res.status}`)
-      const ciudades = cuerpo.ciudades ?? []
-      setResumen(ciudades)
-      pintarMarcadores(marcadores.current, ciudades)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Error desconocido")
-    } finally {
-      setCargando(false)
+function margen(mapa: maplibregl.Map) {
+  const contenedor = mapa.getContainer()
+  const ancho = contenedor.clientWidth
+  // La columna de datos o la ficha de ciudad, la que esté visible.
+  const derecho = [...document.querySelectorAll("[data-panel=derecho]")]
+    .map((e) => e.getBoundingClientRect())
+    .find((r) => r.width > 0)
+  if (ancho < 1024) {
+    // En móvil el resumen va arriba a la derecha sobre el mapa: se deja libre esa franja.
+    const arriba = contenedor.getBoundingClientRect().top
+    const bajoResumen =
+      derecho && derecho.top < arriba + contenedor.clientHeight / 2
+    return {
+      top: bajoResumen ? derecho.bottom - arriba + 12 : 40,
+      bottom: 30,
+      left: 30,
+      right: 30 + ANCHO_ETIQUETA,
     }
-  }, [])
+  }
+  const izquierdo = document
+    .querySelector("[data-panel=izquierdo]")
+    ?.getBoundingClientRect()
+  return {
+    top: 70,
+    bottom: 70,
+    left: (izquierdo?.right ?? 0) + 40,
+    right: ancho - (derecho?.left ?? ancho) + 30 + ANCHO_ETIQUETA,
+  }
+}
 
-  // Crear el mapa una sola vez.
+const encuadrar = (mapa: maplibregl.Map, animar: boolean) =>
+  mapa.fitBounds(LIMITES_CIUDADES, {
+    padding: margen(mapa),
+    maxZoom: 7,
+    animate: animar,
+  })
+
+/**
+ * Mapa satélite con un punto por ciudad. El tamaño del punto depende de
+ * cuántos registros de esa ciudad hay realmente en Supabase. Al pulsar una
+ * ciudad se avisa con `onSeleccionar`.
+ */
+export function MapaCiudades({
+  resumen,
+  reencuadre,
+  onSeleccionar,
+}: {
+  resumen: ResumenCiudad[] | null
+  /** Cambia cuando los paneles cambian de tamaño: el mapa se vuelve a encuadrar. */
+  reencuadre: unknown
+  onSeleccionar: (ciudad: string) => void
+}) {
+  const contenedor = useRef<HTMLDivElement>(null)
+  const mapa = useRef<maplibregl.Map | null>(null)
+  const marcadores = useRef(new Map<string, Marcador>())
+  const alSeleccionar = useRef(onSeleccionar)
+
+  useEffect(() => {
+    alSeleccionar.current = onSeleccionar
+  }, [onSeleccionar])
+
   useEffect(() => {
     if (!contenedor.current || !CLAVE_MAPTILER) return
-    const mapa = new maplibregl.Map({
+    const nuevo = new maplibregl.Map({
       container: contenedor.current,
-      style: `https://api.maptiler.com/maps/outdoor-v4/style.json?key=${CLAVE_MAPTILER}`,
-      center: [-2.5, 40.2],
-      zoom: 4.6,
-      cooperativeGestures: true,
+      style: ESTILO,
+      bounds: LIMITES_CIUDADES,
+      attributionControl: { compact: true },
     })
-    mapa.addControl(
-      new maplibregl.NavigationControl({ showCompass: false }),
-      "top-right"
-    )
+    encuadrar(nuevo, false)
+    nuevo.addControl(new maplibregl.NavigationControl(), "bottom-right")
+
     const actuales = marcadores.current
-    for (const c of CIUDADES) {
-      const punto = document.createElement("div")
-      punto.style.cssText =
-        "width:16px;height:16px;border-radius:9999px;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4);background:#8e8e93;cursor:pointer"
-      punto.setAttribute("aria-label", c.nombre)
-      const marcador = new maplibregl.Marker({ element: punto })
+    CIUDADES.forEach((c, i) => {
+      const color = getComputedStyle(contenedor.current!)
+        .getPropertyValue(`--ciudad-${i + 1}`)
+        .trim()
+      // Caja fija centrada en la coordenada; la etiqueta va fuera del flujo
+      // para no desplazar el punto. Sin `position` propio: MapLibre la pone en
+      // absolute, y un relative haría que los marcadores se apilaran uno bajo otro.
+      const caja = document.createElement("button")
+      caja.type = "button"
+      caja.style.cssText =
+        "width:24px;height:24px;display:grid;place-items:center;cursor:pointer;background:none;border:0;padding:0"
+      caja.setAttribute(
+        "aria-label",
+        `${c.nombre}: ver su temperatura hora a hora`
+      )
+      const punto = document.createElement("span")
+      punto.style.cssText = "border-radius:9999px;border:2px solid #fff"
+      const etiqueta = document.createElement("span")
+      etiqueta.style.cssText = `${ESTILO_ETIQUETA};${LADOS.derecha}`
+      const nombre = document.createElement("span")
+      nombre.textContent = c.nombre
+      const cifra = document.createElement("span")
+      cifra.style.cssText =
+        "margin-left:6px;font-weight:400;font-size:12px;color:rgb(255 255 255 / 80%)"
+      const clima = document.createElement("span")
+      clima.style.cssText =
+        "display:none;font-weight:400;font-size:12px;color:rgb(255 255 255 / 80%)"
+      etiqueta.append(nombre, cifra, clima)
+      caja.append(punto, etiqueta)
+      caja.addEventListener("click", () => alSeleccionar.current(c.nombre))
+
+      new maplibregl.Marker({ element: caja })
         .setLngLat([c.longitud, c.latitud])
-        .setPopup(
-          new maplibregl.Popup({ offset: 14 }).setDOMContent(
-            contenidoPopup(c.nombre, undefined)
-          )
-        )
-        .addTo(mapa)
-      actuales.set(c.nombre, { marcador, punto })
-    }
+        .addTo(nuevo)
+      actuales.set(c.nombre, { caja, punto, etiqueta, cifra, clima, color })
+    })
+    pintarMarcadores(actuales, null)
+
+    // Tras cada movimiento (y al empezar), cada etiqueta busca un lado libre.
+    const recolocar = () => colocarEtiquetas(nuevo, actuales)
+    nuevo.on("moveend", recolocar)
+    requestAnimationFrame(recolocar)
+
+    // Se reencuadra cada vez que cambia el tamaño del mapa (ventana, panel,
+    // altura del móvil resuelta tarde…), no solo al redimensionar la ventana.
+    const observador = new ResizeObserver(() => {
+      nuevo.resize()
+      encuadrar(nuevo, false)
+    })
+    observador.observe(contenedor.current)
+    mapa.current = nuevo
     return () => {
+      observador.disconnect()
       actuales.clear()
-      mapa.remove()
+      nuevo.remove()
+      mapa.current = null
     }
   }, [])
 
-  // Volver a consultar Supabase al abrir la página y cada vez que termina una carga.
+  // Al plegar o desplegar el panel, el hueco libre cambia: se vuelve a encuadrar.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!actualizarTras) void cargarResumen()
-  }, [actualizarTras, cargarResumen])
+    const m = mapa.current
+    if (!m) return
+    m.resize()
+    encuadrar(m, true)
+  }, [reencuadre])
 
-  const conDatos = resumen?.filter((r) => r.registros > 0).length ?? 0
+  // Los datos cambian el tamaño de las etiquetas: se vuelven a colocar.
+  useEffect(() => {
+    pintarMarcadores(marcadores.current, resumen)
+    if (mapa.current) colocarEtiquetas(mapa.current, marcadores.current)
+  }, [resumen])
+
+  if (!CLAVE_MAPTILER) {
+    return (
+      <div className="grid h-full w-full place-items-center p-10 text-center text-sm text-muted-foreground">
+        Falta la clave de MapTiler. Define NEXT_PUBLIC_MAPTILER_KEY en
+        .env.local (y en Vercel) y vuelve a compilar.
+      </div>
+    )
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MapaIcono aria-hidden className="size-4" />
-          4. Mapa: qué hay guardado en Supabase
-        </CardTitle>
-        <CardDescription>
-          Cada punto es una ciudad.{" "}
-          <strong className="text-foreground">Azul</strong> = tiene datos
-          guardados (cuanto más grande, más registros);{" "}
-          <strong className="text-foreground">gris</strong> = todavía sin datos.
-          Pulsa un punto para ver su resumen. Los datos se leen de la base de
-          datos, no del navegador.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-3">
-        {!CLAVE_MAPTILER ? (
-          <Alert>
-            <AlertTitle>Falta la clave de MapTiler</AlertTitle>
-            <AlertDescription>
-              Define NEXT_PUBLIC_MAPTILER_KEY en .env.local (y en Vercel) y
-              vuelve a compilar.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <div
-            ref={contenedor}
-            className="h-96 w-full overflow-hidden rounded-2xl"
-          />
-        )}
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <p className="text-muted-foreground" aria-live="polite">
-            {resumen
-              ? `${conDatos} de ${CIUDADES.length} ciudades con datos · ${n(
-                  resumen.reduce((s, r) => s + r.registros, 0)
-                )} registros en total`
-              : "Consultando Supabase…"}
-          </p>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={cargando}
-            onClick={() => void cargarResumen()}
-          >
-            <RefreshCw
-              aria-hidden
-              className={cargando ? "animate-spin" : undefined}
-            />
-            Actualizar
-          </Button>
-        </div>
-        {error && (
-          <Alert variant="destructive">
-            <AlertTitle>No se pudo leer el resumen</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-      </CardContent>
-    </Card>
+    <div
+      ref={contenedor}
+      role="region"
+      aria-label="Mapa satélite con las ciudades y los registros guardados en Supabase"
+      className="h-full w-full"
+    />
   )
 }

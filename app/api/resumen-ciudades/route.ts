@@ -35,6 +35,24 @@ export async function GET() {
       )
     }
 
+    // Media de temperatura: se leen las filas por páginas de 1000 (el máximo
+    // que devuelve Supabase por consulta) y se promedian aquí.
+    const media = async (ciudad: string, total: number) => {
+      let suma = 0
+      for (let inicio = 0; inicio < total; inicio += 1000) {
+        const { data, error } = await supabase
+          .from(TABLA_MEDICIONES)
+          .select("temperatura_c")
+          .eq("ciudad", ciudad)
+          .order("fecha_hora", { ascending: true })
+          .range(inicio, inicio + 999)
+        if (error) throw error
+        for (const fila of data as { temperatura_c: number }[])
+          suma += fila.temperatura_c
+      }
+      return Math.round((suma / total) * 10) / 10
+    }
+
     const ciudades = await Promise.all(
       NOMBRES_CIUDADES.map(async (ciudad) => {
         const { count, error } = await supabase
@@ -43,13 +61,22 @@ export async function GET() {
           .eq("ciudad", ciudad)
         if (error) throw error
         if (!count) return { ciudad, registros: 0 }
-        const [desde, hasta, tempMin, tempMax] = await Promise.all([
+        const [desde, hasta, tempMin, tempMax, tempMedia] = await Promise.all([
           extremo(ciudad, "fecha_hora", true),
           extremo(ciudad, "fecha_hora", false),
           extremo(ciudad, "temperatura_c", true),
           extremo(ciudad, "temperatura_c", false),
+          media(ciudad, count),
         ])
-        return { ciudad, registros: count, desde, hasta, tempMin, tempMax }
+        return {
+          ciudad,
+          registros: count,
+          desde,
+          hasta,
+          tempMin,
+          tempMax,
+          tempMedia,
+        }
       })
     )
     return Response.json({ ciudades })

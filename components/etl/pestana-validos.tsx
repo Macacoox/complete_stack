@@ -4,7 +4,11 @@ import { Eraser, Filter } from "lucide-react"
 import { useState, type ReactNode } from "react"
 
 import { AvisoLocal } from "@/components/etl/pestanas-inspeccion"
-import { Paginacion, TablaDatos, type Columna } from "@/components/etl/tabla-datos"
+import {
+  Paginacion,
+  TablaDatos,
+  type Columna,
+} from "@/components/etl/tabla-datos"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -34,10 +38,33 @@ export const ETIQUETAS_ORDEN: Record<CampoOrden, string> = {
 /** Columnas de medición compartidas por las tablas de registros válidos. */
 export const COLUMNAS_MEDICION: Columna<RegistroValido>[] = [
   { id: "ciudad", titulo: "Ciudad", celda: (r) => r.ciudad },
-  { id: "fecha", titulo: "Fecha y hora", unidad: "UTC", celda: (r) => fechaUtc(r.fecha_hora) },
-  { id: "t", titulo: "Temperatura", unidad: "°C", numerica: true, celda: (r) => r.temperatura_c },
-  { id: "h", titulo: "Humedad", unidad: "%", numerica: true, celda: (r) => r.humedad_pct },
-  { id: "p", titulo: "Precipitación", unidad: "mm", numerica: true, celda: (r) => r.precipitacion_mm },
+  {
+    id: "fecha",
+    titulo: "Fecha y hora",
+    unidad: "UTC",
+    celda: (r) => fechaUtc(r.fecha_hora),
+  },
+  {
+    id: "t",
+    titulo: "Temperatura",
+    unidad: "°C",
+    numerica: true,
+    celda: (r) => r.temperatura_c,
+  },
+  {
+    id: "h",
+    titulo: "Humedad",
+    unidad: "%",
+    numerica: true,
+    celda: (r) => r.humedad_pct,
+  },
+  {
+    id: "p",
+    titulo: "Precipitación",
+    unidad: "mm",
+    numerica: true,
+    celda: (r) => r.precipitacion_mm,
+  },
 ]
 
 function Rango({
@@ -65,23 +92,45 @@ function Rango({
         <Label htmlFor={`${id}-min`} className="sr-only">
           {titulo} mínima
         </Label>
-        <Input id={`${id}-min`} inputMode="decimal" placeholder="mín." value={min} onChange={(e) => onMin(e.target.value)} />
+        <Input
+          id={`${id}-min`}
+          inputMode="decimal"
+          placeholder="mín."
+          value={min}
+          onChange={(e) => onMin(e.target.value)}
+        />
         <Label htmlFor={`${id}-max`} className="sr-only">
           {titulo} máxima
         </Label>
-        <Input id={`${id}-max`} inputMode="decimal" placeholder="máx." value={max} onChange={(e) => onMax(e.target.value)} />
+        <Input
+          id={`${id}-max`}
+          inputMode="decimal"
+          placeholder="máx."
+          value={max}
+          onChange={(e) => onMax(e.target.value)}
+        />
       </div>
     </fieldset>
   )
 }
 
-function PanelFiltros({ pipeline, ciudades }: { pipeline: PipelineEtl; ciudades: string[] }) {
+function PanelFiltros({
+  pipeline,
+  ciudades,
+}: {
+  pipeline: PipelineEtl
+  ciudades: string[]
+}) {
   const { filtros, setFiltros, orden, setOrden } = pipeline
-  const cambiar = (cambios: Partial<Filtros>) => setFiltros((f) => ({ ...f, ...cambios }))
+  const cambiar = (cambios: Partial<Filtros>) =>
+    setFiltros((f) => ({ ...f, ...cambios }))
   const errores = erroresFiltros(filtros)
 
   return (
-    <section aria-label="Filtros y ordenación" className="grid gap-4 rounded-lg border p-3">
+    <section
+      aria-label="Filtros y ordenación"
+      className="grid gap-4 rounded-lg border p-3"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 text-sm font-medium">
           <Filter aria-hidden className="size-4" /> Filtros y ordenación
@@ -99,9 +148,11 @@ function PanelFiltros({ pipeline, ciudades }: { pipeline: PipelineEtl; ciudades:
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <fieldset className="grid gap-1 sm:col-span-2 lg:col-span-1">
-          <legend className="mb-1 text-xs font-medium">Ciudades (ninguna marcada = todas)</legend>
+      <div className="grid gap-4 @xl:grid-cols-2 @5xl:grid-cols-4">
+        <fieldset className="grid gap-1 @xl:col-span-2 @5xl:col-span-1">
+          <legend className="mb-1 text-xs font-medium">
+            Ciudades (ninguna marcada = todas)
+          </legend>
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {ciudades.map((c) => (
               <Label key={c} className="cursor-pointer text-sm font-normal">
@@ -109,7 +160,9 @@ function PanelFiltros({ pipeline, ciudades }: { pipeline: PipelineEtl; ciudades:
                   checked={filtros.ciudades.includes(c)}
                   onCheckedChange={(v) =>
                     cambiar({
-                      ciudades: v ? [...filtros.ciudades, c] : filtros.ciudades.filter((x) => x !== c),
+                      ciudades: v
+                        ? [...filtros.ciudades, c]
+                        : filtros.ciudades.filter((x) => x !== c),
                     })
                   }
                 />
@@ -119,9 +172,14 @@ function PanelFiltros({ pipeline, ciudades }: { pipeline: PipelineEtl; ciudades:
           </div>
         </fieldset>
 
-        <fieldset className="grid gap-1 sm:col-span-2 lg:col-span-1">
-          <legend className="mb-1 text-xs font-medium">Intervalo de fecha y hora (UTC)</legend>
-          <Label htmlFor="filtro-desde" className="text-xs font-normal text-muted-foreground">
+        <fieldset className="grid gap-1 @xl:col-span-2 @5xl:col-span-1">
+          <legend className="mb-1 text-xs font-medium">
+            Intervalo de fecha y hora (UTC)
+          </legend>
+          <Label
+            htmlFor="filtro-desde"
+            className="text-xs font-normal text-muted-foreground"
+          >
             Desde
           </Label>
           <Input
@@ -130,7 +188,10 @@ function PanelFiltros({ pipeline, ciudades }: { pipeline: PipelineEtl; ciudades:
             value={filtros.desde}
             onChange={(e) => cambiar({ desde: e.target.value })}
           />
-          <Label htmlFor="filtro-hasta" className="text-xs font-normal text-muted-foreground">
+          <Label
+            htmlFor="filtro-hasta"
+            className="text-xs font-normal text-muted-foreground"
+          >
             Hasta (incluida)
           </Label>
           <Input
@@ -170,7 +231,10 @@ function PanelFiltros({ pipeline, ciudades }: { pipeline: PipelineEtl; ciudades:
             onMax={(v) => cambiar({ precMax: v })}
           />
           <Label className="cursor-pointer text-sm font-normal">
-            <Checkbox checked={filtros.soloLluvia} onCheckedChange={(v) => cambiar({ soloLluvia: v })} />
+            <Checkbox
+              checked={filtros.soloLluvia}
+              onCheckedChange={(v) => cambiar({ soloLluvia: v })}
+            />
             Solo registros con lluvia (precipitación &gt; 0 mm)
           </Label>
           <div className="grid gap-1">
@@ -182,7 +246,9 @@ function PanelFiltros({ pipeline, ciudades }: { pipeline: PipelineEtl; ciudades:
                 id="orden-campo"
                 className="h-8 flex-1 rounded-lg border bg-background px-2 text-sm"
                 value={orden.campo}
-                onChange={(e) => setOrden({ ...orden, campo: e.target.value as CampoOrden })}
+                onChange={(e) =>
+                  setOrden({ ...orden, campo: e.target.value as CampoOrden })
+                }
               >
                 {Object.entries(ETIQUETAS_ORDEN).map(([valor, etiqueta]) => (
                   <option key={valor} value={valor}>
@@ -194,7 +260,12 @@ function PanelFiltros({ pipeline, ciudades }: { pipeline: PipelineEtl; ciudades:
                 aria-label="Dirección de la ordenación"
                 className="h-8 rounded-lg border bg-background px-2 text-sm"
                 value={orden.direccion}
-                onChange={(e) => setOrden({ ...orden, direccion: e.target.value as "asc" | "desc" })}
+                onChange={(e) =>
+                  setOrden({
+                    ...orden,
+                    direccion: e.target.value as "asc" | "desc",
+                  })
+                }
               >
                 <option value="asc">Ascendente</option>
                 <option value="desc">Descendente</option>
@@ -236,8 +307,12 @@ export function PestanaValidos({ pipeline }: { pipeline: PipelineEtl }) {
       titulo: (
         <Checkbox
           aria-label="Seleccionar todas las filas de esta página"
-          checked={clavesPagina.length > 0 && marcadasPagina === clavesPagina.length}
-          indeterminate={marcadasPagina > 0 && marcadasPagina < clavesPagina.length}
+          checked={
+            clavesPagina.length > 0 && marcadasPagina === clavesPagina.length
+          }
+          indeterminate={
+            marcadasPagina > 0 && marcadasPagina < clavesPagina.length
+          }
           disabled={clavesPagina.length === 0}
           onCheckedChange={(v) => alternarSeleccion(clavesPagina, v)}
         />
@@ -261,21 +336,23 @@ export function PestanaValidos({ pipeline }: { pipeline: PipelineEtl }) {
         <p className="font-medium">Cómo elegir qué filas subir</p>
         <ol className="list-decimal pl-5 text-muted-foreground">
           <li>
-            <span className="text-foreground">Filtra</span> (opcional): deja solo las ciudades, fechas o
-            valores que te interesen. Sin filtros se ven todas las filas válidas.
+            <span className="text-foreground">Filtra</span> (opcional): deja
+            solo las ciudades, fechas o valores que te interesen. Sin filtros se
+            ven todas las filas válidas.
           </li>
           <li>
-            <span className="text-foreground">Selecciona</span>: pulsa «Seleccionar las … filas filtradas»
-            o marca casillas sueltas en la tabla.
+            <span className="text-foreground">Selecciona</span>: pulsa
+            «Seleccionar las … filas filtradas» o marca casillas sueltas en la
+            tabla.
           </li>
           <li>
-            <span className="text-foreground">Carga</span>: ve a la pestaña «Vista previa de la carga» y
-            súbelas.
+            <span className="text-foreground">Carga</span>: ve a la pestaña
+            «Vista previa de la carga» y súbelas.
           </li>
         </ol>
         <p className="text-xs text-muted-foreground">
-          Solo se suben las filas que estén marcadas <em>y</em> que pasen los filtros actuales. Cambiar
-          los filtros no marca filas nuevas.
+          Solo se suben las filas que estén marcadas <em>y</em> que pasen los
+          filtros actuales. Cambiar los filtros no marca filas nuevas.
         </p>
       </div>
       <PanelFiltros
@@ -295,10 +372,14 @@ export function PestanaValidos({ pipeline }: { pipeline: PipelineEtl }) {
 
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="mr-auto">
-          <strong className="tabular-nums">{n(seleccionados.ordenados.length)}</strong> de{" "}
-          {n(limpieza.validos.length)} válidos cumplen los filtros ·{" "}
-          <strong className="tabular-nums">{n(seleccionados.aSubir.length)}</strong> seleccionados para
-          cargar
+          <strong className="tabular-nums">
+            {n(seleccionados.ordenados.length)}
+          </strong>{" "}
+          de {n(limpieza.validos.length)} válidos cumplen los filtros ·{" "}
+          <strong className="tabular-nums">
+            {n(seleccionados.aSubir.length)}
+          </strong>{" "}
+          seleccionados para cargar
         </span>
         <Button
           size="sm"
@@ -308,7 +389,12 @@ export function PestanaValidos({ pipeline }: { pipeline: PipelineEtl }) {
         >
           Seleccionar las {n(seleccionados.ordenados.length)} filas filtradas
         </Button>
-        <Button size="sm" variant="outline" disabled={seleccion.size === 0} onClick={pipeline.vaciarSeleccion}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={seleccion.size === 0}
+          onClick={pipeline.vaciarSeleccion}
+        >
           Vaciar selección ({n(seleccion.size)})
         </Button>
       </div>
@@ -341,5 +427,9 @@ export function PestanaValidos({ pipeline }: { pipeline: PipelineEtl }) {
 }
 
 export function Nota({ children }: { children: ReactNode }) {
-  return <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">{children}</p>
+  return (
+    <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+      {children}
+    </p>
+  )
 }

@@ -4,17 +4,31 @@ import { Download, RotateCcw } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import { EtiquetaEstado } from "@/components/etl/estado"
-import { Paginacion, TablaDatos, type Columna } from "@/components/etl/tabla-datos"
+import {
+  Paginacion,
+  TablaDatos,
+  type Columna,
+} from "@/components/etl/tabla-datos"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import type { PipelineEtl } from "@/hooks/use-pipeline-etl"
-import { bytes, duracion, esNumeroFinito, fechaUtc, jsonCompacto, n, valorBruto } from "@/lib/etl/formato"
+import {
+  bytes,
+  duracion,
+  esNumeroFinito,
+  fechaUtc,
+  jsonCompacto,
+  n,
+  valorBruto,
+} from "@/lib/etl/formato"
 import { paginar } from "@/lib/etl/filtros"
 import type { RegistroRechazado, RegistroTransformado } from "@/lib/etl/tipos"
 import { cn } from "@/lib/utils"
 
 export function descargarArchivo(nombre: string, contenido: string) {
-  const url = URL.createObjectURL(new Blob([contenido], { type: "application/json" }))
+  const url = URL.createObjectURL(
+    new Blob([contenido], { type: "application/json" })
+  )
   const a = document.createElement("a")
   a.href = url
   a.download = nombre
@@ -25,8 +39,9 @@ export function descargarArchivo(nombre: string, contenido: string) {
 export function AvisoLocal() {
   return (
     <p className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
-      <strong className="font-medium text-foreground">Datos locales:</strong> existen solo en este
-      navegador durante la sesión. Nada de esto está en Supabase hasta que lo subas.
+      <strong className="font-medium text-foreground">Datos locales:</strong>{" "}
+      existen solo en este navegador durante la sesión. Nada de esto está en
+      Supabase hasta que lo subas.
     </p>
   )
 }
@@ -51,10 +66,16 @@ function usePaginacion(total: number) {
 export function PestanaJson({ pipeline }: { pipeline: PipelineEtl }) {
   const descargas = pipeline.extraccion?.descargas ?? []
   const [abierta, setAbierta] = useState<string | null>(null)
-  const actual = descargas.find((d) => d.ciudad.id === abierta) ?? descargas.find((d) => d.respuesta)
+  const actual =
+    descargas.find((d) => d.ciudad.id === abierta) ??
+    descargas.find((d) => d.respuesta)
 
   if (!pipeline.extraccion) {
-    return <p className="py-8 text-center text-muted-foreground">Aún no hay extracciones.</p>
+    return (
+      <p className="py-8 text-center text-muted-foreground">
+        Aún no hay extracciones.
+      </p>
+    )
   }
 
   const { inicio, fin } = pipeline.extraccion
@@ -62,7 +83,11 @@ export function PestanaJson({ pipeline }: { pipeline: PipelineEtl }) {
     descargarArchivo(
       `open-meteo_${inicio}_${fin}.json`,
       JSON.stringify(
-        Object.fromEntries(descargas.filter((d) => d.respuesta).map((d) => [d.ciudad.nombre, d.respuesta])),
+        Object.fromEntries(
+          descargas
+            .filter((d) => d.respuesta)
+            .map((d) => [d.ciudad.nombre, d.respuesta])
+        ),
         null,
         2
       )
@@ -84,13 +109,15 @@ export function PestanaJson({ pipeline }: { pipeline: PipelineEtl }) {
           <Download aria-hidden /> Descargar todos (JSON)
         </Button>
       </div>
-      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid gap-2 @xl:grid-cols-2 @5xl:grid-cols-3">
         {descargas.map((d) => (
           <li
             key={d.ciudad.id}
             className={cn(
               "grid gap-2 rounded-lg border p-3 text-sm",
-              actual?.ciudad.id === d.ciudad.id && d.respuesta && "border-primary/60"
+              actual?.ciudad.id === d.ciudad.id &&
+                d.respuesta &&
+                "border-primary/60"
             )}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -105,7 +132,14 @@ export function PestanaJson({ pipeline }: { pipeline: PipelineEtl }) {
                         ? "en_curso"
                         : "pendiente"
                 }
-                texto={{ ok: "Descargado", error: "Error", descargando: "Descargando…", pendiente: "Pendiente" }[d.estado]}
+                texto={
+                  {
+                    ok: "Descargado",
+                    error: "Error",
+                    descargando: "Descargando…",
+                    pendiente: "Pendiente",
+                  }[d.estado]
+                }
               />
             </div>
             <p className="text-xs break-all text-muted-foreground">
@@ -123,7 +157,11 @@ export function PestanaJson({ pipeline }: { pipeline: PipelineEtl }) {
             <div className="flex flex-wrap gap-2">
               {d.respuesta && (
                 <>
-                  <Button size="sm" variant="secondary" onClick={() => setAbierta(d.ciudad.id)}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setAbierta(d.ciudad.id)}
+                  >
                     Ver JSON
                   </Button>
                   <Button
@@ -155,9 +193,14 @@ export function PestanaJson({ pipeline }: { pipeline: PipelineEtl }) {
         ))}
       </ul>
       {actual?.respuesta && (
-        <section aria-label={`JSON original de ${actual.ciudad.nombre}`} className="grid gap-2">
-          <h3 className="text-sm font-medium">JSON original · {actual.ciudad.nombre}</h3>
-          <pre className="max-h-[28rem] overflow-auto rounded-lg border bg-muted/40 p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap break-all">
+        <section
+          aria-label={`JSON original de ${actual.ciudad.nombre}`}
+          className="grid gap-2"
+        >
+          <h3 className="text-sm font-medium">
+            JSON original · {actual.ciudad.nombre}
+          </h3>
+          <pre className="max-h-[28rem] overflow-auto rounded-lg border bg-muted/40 p-3 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap">
             {jsonCompacto(actual.respuesta)}
           </pre>
         </section>
@@ -170,17 +213,28 @@ export function PestanaJson({ pipeline }: { pipeline: PipelineEtl }) {
 
 function CeldaBruta({ valor }: { valor: unknown }) {
   const ok = esNumeroFinito(valor)
-  return <span className={cn(!ok && "font-semibold text-destructive")}>{valorBruto(valor)}</span>
+  return (
+    <span className={cn(!ok && "font-semibold text-destructive")}>
+      {valorBruto(valor)}
+    </span>
+  )
 }
 
 const COLUMNAS_TRANSFORMADOS: Columna<RegistroTransformado>[] = [
   { id: "fila", titulo: "Fila", numerica: true, celda: (r) => r.fila },
   { id: "ciudad", titulo: "ciudad", celda: (r) => r.ciudad },
-  { id: "indice", titulo: "Índice en arrays", numerica: true, celda: (r) => r.indice },
+  {
+    id: "indice",
+    titulo: "Índice en arrays",
+    numerica: true,
+    celda: (r) => r.indice,
+  },
   {
     id: "fecha_original",
     titulo: "time (original)",
-    celda: (r) => <span className="font-mono text-xs">{valorBruto(r.fecha_original)}</span>,
+    celda: (r) => (
+      <span className="font-mono text-xs">{valorBruto(r.fecha_original)}</span>
+    ),
   },
   {
     id: "fecha_hora",
@@ -193,9 +247,27 @@ const COLUMNAS_TRANSFORMADOS: Columna<RegistroTransformado>[] = [
         <span className="font-semibold text-destructive">no válida</span>
       ),
   },
-  { id: "t", titulo: "temperatura_c", unidad: "°C", numerica: true, celda: (r) => <CeldaBruta valor={r.temperatura_c} /> },
-  { id: "h", titulo: "humedad_pct", unidad: "%", numerica: true, celda: (r) => <CeldaBruta valor={r.humedad_pct} /> },
-  { id: "p", titulo: "precipitacion_mm", unidad: "mm", numerica: true, celda: (r) => <CeldaBruta valor={r.precipitacion_mm} /> },
+  {
+    id: "t",
+    titulo: "temperatura_c",
+    unidad: "°C",
+    numerica: true,
+    celda: (r) => <CeldaBruta valor={r.temperatura_c} />,
+  },
+  {
+    id: "h",
+    titulo: "humedad_pct",
+    unidad: "%",
+    numerica: true,
+    celda: (r) => <CeldaBruta valor={r.humedad_pct} />,
+  },
+  {
+    id: "p",
+    titulo: "precipitacion_mm",
+    unidad: "mm",
+    numerica: true,
+    celda: (r) => <CeldaBruta valor={r.precipitacion_mm} />,
+  },
 ]
 
 export function PestanaTransformados({ pipeline }: { pipeline: PipelineEtl }) {
@@ -207,10 +279,12 @@ export function PestanaTransformados({ pipeline }: { pipeline: PipelineEtl }) {
     <div className="grid gap-3">
       <AvisoLocal />
       <p className="text-sm text-muted-foreground">
-        Cada posición <code>i</code> de los arrays <code>hourly.time</code>, <code>temperature_2m</code>,{" "}
-        <code>relative_humidity_2m</code> y <code>precipitation</code> se convierte en un registro. Las
-        horas se interpretan explícitamente como UTC (se añade la zona «Z»). Los valores se muestran tal
-        como llegaron: <code>null</code>, cadenas y ausentes no se convierten en 0.
+        Cada posición <code>i</code> de los arrays <code>hourly.time</code>,{" "}
+        <code>temperature_2m</code>, <code>relative_humidity_2m</code> y{" "}
+        <code>precipitation</code> se convierte en un registro. Las horas se
+        interpretan explícitamente como UTC (se añade la zona «Z»). Los valores
+        se muestran tal como llegaron: <code>null</code>, cadenas y ausentes no
+        se convierten en 0.
       </p>
       {avisos.length > 0 && (
         <Alert>
@@ -254,11 +328,31 @@ const COLUMNAS_RECHAZADOS: Columna<RegistroRechazado>[] = [
     titulo: "fecha_hora",
     unidad: "UTC",
     celda: (r) =>
-      r.registro.fecha_hora ? fechaUtc(r.registro.fecha_hora) : valorBruto(r.registro.fecha_original),
+      r.registro.fecha_hora
+        ? fechaUtc(r.registro.fecha_hora)
+        : valorBruto(r.registro.fecha_original),
   },
-  { id: "t", titulo: "temperatura_c", unidad: "°C", numerica: true, celda: (r) => <CeldaBruta valor={r.registro.temperatura_c} /> },
-  { id: "h", titulo: "humedad_pct", unidad: "%", numerica: true, celda: (r) => <CeldaBruta valor={r.registro.humedad_pct} /> },
-  { id: "p", titulo: "precipitacion_mm", unidad: "mm", numerica: true, celda: (r) => <CeldaBruta valor={r.registro.precipitacion_mm} /> },
+  {
+    id: "t",
+    titulo: "temperatura_c",
+    unidad: "°C",
+    numerica: true,
+    celda: (r) => <CeldaBruta valor={r.registro.temperatura_c} />,
+  },
+  {
+    id: "h",
+    titulo: "humedad_pct",
+    unidad: "%",
+    numerica: true,
+    celda: (r) => <CeldaBruta valor={r.registro.humedad_pct} />,
+  },
+  {
+    id: "p",
+    titulo: "precipitacion_mm",
+    unidad: "mm",
+    numerica: true,
+    celda: (r) => <CeldaBruta valor={r.registro.precipitacion_mm} />,
+  },
   {
     id: "motivos",
     titulo: "Motivo del rechazo",
@@ -281,7 +375,9 @@ export function PestanaRechazados({ pipeline }: { pipeline: PipelineEtl }) {
     for (const r of rechazados) {
       for (const m of r.motivos) {
         // Agrupa por tipo de motivo (sin el valor concreto ni la fila).
-        const tipo = m.replace(/\s*\(.*\)$/, "").replace(/: se conserva la fila \d+$/, "")
+        const tipo = m
+          .replace(/\s*\(.*\)$/, "")
+          .replace(/: se conserva la fila \d+$/, "")
         conteo.set(tipo, (conteo.get(tipo) ?? 0) + 1)
       }
     }
@@ -292,11 +388,13 @@ export function PestanaRechazados({ pipeline }: { pipeline: PipelineEtl }) {
     <div className="grid gap-3">
       <AvisoLocal />
       <p className="text-sm text-muted-foreground">
-        Descartes por <strong>calidad</strong>: falta ciudad o fecha válida, alguna medición es nula, vacía,
-        ausente o no numérica, humedad fuera de 0–100 %, precipitación negativa, o{" "}
-        <strong>duplicado</strong> por (ciudad, fecha_hora): se conserva la primera aparición válida en el
-        orden de extracción. La temperatura no se descarta por umbrales. Los registros excluidos por los
-        filtros <em>no</em> aparecen aquí: siguen siendo válidos.
+        Descartes por <strong>calidad</strong>: falta ciudad o fecha válida,
+        alguna medición es nula, vacía, ausente o no numérica, humedad fuera de
+        0–100 %, precipitación negativa, o <strong>duplicado</strong> por
+        (ciudad, fecha_hora): se conserva la primera aparición válida en el
+        orden de extracción. La temperatura no se descarta por umbrales. Los
+        registros excluidos por los filtros <em>no</em> aparecen aquí: siguen
+        siendo válidos.
       </p>
       {porMotivo.length > 0 && (
         <ul className="flex flex-wrap gap-2 text-xs">
@@ -306,7 +404,8 @@ export function PestanaRechazados({ pipeline }: { pipeline: PipelineEtl }) {
             </li>
           ))}
           <li className="rounded-md border px-2 py-1">
-            Duplicados eliminados: <strong className="tabular-nums">{n(duplicados)}</strong>
+            Duplicados eliminados:{" "}
+            <strong className="tabular-nums">{n(duplicados)}</strong>
           </li>
         </ul>
       )}

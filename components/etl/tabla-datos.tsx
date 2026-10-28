@@ -48,11 +48,16 @@ export function TablaDatos<T>({
               <TableHead
                 key={c.id}
                 scope="col"
-                className={cn("h-auto py-2 align-bottom", c.numerica && "text-right")}
+                className={cn(
+                  "h-auto py-2 align-bottom",
+                  c.numerica && "text-right"
+                )}
               >
                 <span className="block">{c.titulo}</span>
                 {c.unidad && (
-                  <span className="block text-xs font-normal text-muted-foreground">{c.unidad}</span>
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    {c.unidad}
+                  </span>
                 )}
               </TableHead>
             ))}
@@ -61,7 +66,10 @@ export function TablaDatos<T>({
         <TableBody>
           {filas.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={columnas.length} className="py-8 text-center text-muted-foreground">
+              <TableCell
+                colSpan={columnas.length}
+                className="py-8 text-center text-muted-foreground"
+              >
                 {vacio}
               </TableCell>
             </TableRow>
@@ -71,7 +79,9 @@ export function TablaDatos<T>({
                 {columnas.map((c) => (
                   <TableCell
                     key={c.id}
-                    className={cn(c.numerica && "text-right font-mono tabular-nums")}
+                    className={cn(
+                      c.numerica && "text-right font-mono tabular-nums"
+                    )}
                   >
                     {c.celda(fila)}
                   </TableCell>
@@ -110,7 +120,8 @@ export function Paginacion({
       className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground"
     >
       <p aria-live="polite">
-        {n(desde)}–{n(hasta)} de {n(total)} {etiqueta} · página {n(pagina)} de {n(totalPaginas)}
+        {n(desde)}–{n(hasta)} de {n(total)} {etiqueta} · página {n(pagina)} de{" "}
+        {n(totalPaginas)}
       </p>
       <div className="flex flex-wrap items-center gap-1">
         <label className="mr-2 flex items-center gap-1">
@@ -127,10 +138,20 @@ export function Paginacion({
             ))}
           </select>
         </label>
-        <Button size="sm" variant="outline" disabled={pagina <= 1} onClick={() => onPagina(1)}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={pagina <= 1}
+          onClick={() => onPagina(1)}
+        >
           Primera
         </Button>
-        <Button size="sm" variant="outline" disabled={pagina <= 1} onClick={() => onPagina(pagina - 1)}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={pagina <= 1}
+          onClick={() => onPagina(pagina - 1)}
+        >
           Anterior
         </Button>
         <Button

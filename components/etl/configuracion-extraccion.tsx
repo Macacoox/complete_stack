@@ -5,7 +5,13 @@ import { useState } from "react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -53,19 +59,19 @@ export function ConfiguracionExtraccionPanel({
       <CardHeader>
         <CardTitle>1. Configuración de extracción</CardTitle>
         <CardDescription>
-          API histórica de Open-Meteo · horas en UTC · temperatura en °C · precipitación en mm.
-          Máximo {MAX_DIAS_EXTRACCION} días por extracción.
+          API histórica de Open-Meteo · horas en UTC · temperatura en °C ·
+          precipitación en mm. Máximo {MAX_DIAS_EXTRACCION} días por extracción.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form
-          className="grid gap-5 md:grid-cols-[1fr_auto_auto]"
+          className="grid gap-4 @xl:grid-cols-[1fr_16rem]"
           onSubmit={(e) => {
             e.preventDefault()
             if (errores.length === 0 && !bloqueado) onExtraer(config)
           }}
         >
-          <fieldset className="grid gap-2">
+          <fieldset className="grid gap-2 @xl:col-span-2">
             <legend className="mb-2 text-sm font-medium">Ciudades</legend>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {CIUDADES.map((c) => (
@@ -85,7 +91,12 @@ export function ConfiguracionExtraccionPanel({
               <button
                 type="button"
                 className="underline underline-offset-2"
-                onClick={() => setConfig((c) => ({ ...c, ciudades: CIUDADES.map((x) => x.id) }))}
+                onClick={() =>
+                  setConfig((c) => ({
+                    ...c,
+                    ciudades: CIUDADES.map((x) => x.id),
+                  }))
+                }
               >
                 Todas
               </button>
@@ -99,7 +110,7 @@ export function ConfiguracionExtraccionPanel({
             </div>
           </fieldset>
 
-          <div className="grid content-start gap-3 sm:grid-cols-2 md:grid-cols-1">
+          <div className="grid content-start gap-3">
             <div className="grid gap-1.5">
               <Label htmlFor="fecha-inicio">Fecha inicial (UTC)</Label>
               <Input
@@ -108,7 +119,9 @@ export function ConfiguracionExtraccionPanel({
                 min={FECHA_MINIMA}
                 max={hoyUtc()}
                 value={config.inicio}
-                onChange={(e) => setConfig((c) => ({ ...c, inicio: e.target.value }))}
+                onChange={(e) =>
+                  setConfig((c) => ({ ...c, inicio: e.target.value }))
+                }
               />
             </div>
             <div className="grid gap-1.5">
@@ -119,25 +132,36 @@ export function ConfiguracionExtraccionPanel({
                 min={FECHA_MINIMA}
                 max={hoyUtc()}
                 value={config.fin}
-                onChange={(e) => setConfig((c) => ({ ...c, fin: e.target.value }))}
+                onChange={(e) =>
+                  setConfig((c) => ({ ...c, fin: e.target.value }))
+                }
               />
             </div>
           </div>
 
-          <div className="grid content-start gap-3 rounded-2xl bg-muted p-4 text-sm md:w-64">
+          <div className="grid content-start gap-2 rounded-2xl bg-muted p-4 text-sm">
             <p className="font-medium">Volumen previsto</p>
             <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1">
               <dt className="text-muted-foreground">Ciudades / peticiones</dt>
-              <dd className="text-right tabular-nums">{n(volumen.peticiones)}</dd>
+              <dd className="text-right tabular-nums">
+                {n(volumen.peticiones)}
+              </dd>
               <dt className="text-muted-foreground">Días</dt>
               <dd className="text-right tabular-nums">{n(volumen.dias)}</dd>
               <dt className="text-muted-foreground">Registros horarios</dt>
-              <dd className="text-right font-medium tabular-nums">{n(volumen.registros)}</dd>
+              <dd className="text-right font-medium tabular-nums">
+                {n(volumen.registros)}
+              </dd>
             </dl>
             <p className="text-xs text-muted-foreground">
-              Ciudades × días × 24 horas. El número real se comprobará al extraer.
+              Ciudades × días × 24 horas. El número real se comprobará al
+              extraer.
             </p>
-            <Button type="submit" disabled={bloqueado} aria-describedby="errores-config">
+            <Button
+              type="submit"
+              disabled={bloqueado}
+              aria-describedby="errores-config"
+            >
               <CloudDownload aria-hidden />
               Extraer datos
             </Button>
@@ -146,7 +170,11 @@ export function ConfiguracionExtraccionPanel({
             )}
           </div>
 
-          <div id="errores-config" className="md:col-span-3" aria-live="polite">
+          <div
+            id="errores-config"
+            className="@xl:col-span-2"
+            aria-live="polite"
+          >
             {errores.length > 0 && (
               <Alert variant="destructive">
                 <AlertTitle>Revisa la configuración</AlertTitle>
